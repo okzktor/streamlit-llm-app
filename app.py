@@ -1,45 +1,77 @@
+
+from dotenv import load_dotenv
+load_dotenv()
+
 import streamlit as st
 
-st.title("サンプルアプリ②: 少し複雑なWebアプリ")
+from openai import OpenAI
 
-st.write("##### 動作モード1: 文字数カウント")
-st.write("入力フォームにテキストを入力し、「実行」ボタンを押すことで文字数をカウントできます。")
-st.write("##### 動作モード2: BMI値の計算")
-st.write("身長と体重を入力することで、肥満度を表す体型指数のBMI値を算出できます。")
+st.title("サンプルアプリ②: LLM機能を搭載したWebアプリ")
+
+st.write("##### 動作モード1: レシピ提案")
+st.write("料理名を入力するとレシピを提案します")
+st.write("##### 動作モード2: トレーニングメニュー提案")
+st.write("空き時間(分)を入力すると、その時間内で行えるトレーニングメニューを提案します")
 
 selected_item = st.radio(
     "動作モードを選択してください。",
-    ["文字数カウント", "BMI値の計算"]
+    ["レシピ提案", "トレーニングメニュー提案"]
 )
 
 st.divider()
 
-if selected_item == "文字数カウント":
-    input_message = st.text_input(label="文字数のカウント対象となるテキストを入力してください。")
-    text_count = len(input_message)
+if selected_item == "レシピ提案":
+    input_message = st.text_input(label="料理名を入力してください。")
+
+
+
 
 else:
-    height = st.text_input(label="身長（cm）を入力してください。")
-    weight = st.text_input(label="体重（kg）を入力してください。")
+    time_limit = st.text_input(label="空き時間(分)を入力してください。")
+
+
+
 
 if st.button("実行"):
     st.divider()
-
-    if selected_item == "文字数カウント":
+    if selected_item == "レシピ提案":
         if input_message:
-            st.write(f"文字数: **{text_count}**")
-
-        else:
-            st.error("カウント対象となるテキストを入力してから「実行」ボタンを押してください。")
-
-    else:
-        if height and weight:
             try:
-                bmi = round(int(weight) / ((int(height)/100) ** 2), 1)
-                st.write(f"BMI値: {bmi}")
-
-            except ValueError as e:
-                st.error("身長と体重は数値で入力してください。")
+                client = OpenAI()
+                first_completion = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "あなたは料理研究家です。入力されたメニューのレシピを提案します。"},
+                        {"role": "user", "content": input_message}
+                    ],
+                    temperature=0.5
+                )
+                answer = first_completion.choices[0].message.content
+                st.write(f"{input_message}のレシピ: {answer}")
+            except Exception as e:
+                st.error(f"LLM呼び出しでエラーが発生しました: {e}")
 
         else:
-            st.error("身長と体重をどちらも入力してください。")
+            st.error("入力してから「実行」ボタンを押してください。")
+
+
+
+    if selected_item == "トレーニングメニュー提案":
+        if time_limit:
+            try:
+                client = OpenAI()
+                first_completion = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "あなたは熟練のパーソナルトレーナーです。入力された分数でできるトレーニングメニューを提案します。"},
+                        {"role": "user", "content": time_limit}
+                    ],
+                    temperature=0.5
+                )
+                answer = first_completion.choices[0].message.content
+                st.write(f"{time_limit}分でできるトレーニングメニュー: {answer}")
+            except Exception as e:
+                st.error(f"LLM呼び出しでエラーが発生しました: {e}")
+
+        else:
+            st.error("入力してから「実行」ボタンを押してください。")
